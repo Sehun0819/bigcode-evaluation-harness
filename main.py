@@ -45,6 +45,11 @@ def parse_args():
         help="Model to evaluate, provide a repo name in Hugging Face hub or a local path",
     )
     parser.add_argument(
+        "--pt",
+        default="",
+        help="PyTorch model(.pt) to evaluate, provide a local path",
+    )
+    parser.add_argument(
         "--modeltype",
         default="causal",
         help="AutoModel to use, it can be causal or seq2seq",
@@ -293,10 +298,13 @@ def main():
                     print("Loading model in auto mode")
 
         if args.modeltype == "causal":
-            model = AutoModelForCausalLM.from_pretrained(
-                args.model,
-                **model_kwargs,
-            )
+            if args.pt != "":
+                model = torch.load(args.pt, weights_only=False)
+            else:
+                model = AutoModelForCausalLM.from_pretrained(
+                    args.model,
+                    **model_kwargs,
+                )            
         elif args.modeltype == "seq2seq":
             warnings.warn(
                 "Seq2Seq models have only been tested for HumanEvalPack & CodeT5+ models."
