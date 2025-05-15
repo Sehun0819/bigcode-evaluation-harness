@@ -8,6 +8,7 @@ WORKDIR /app
 
 RUN test -f /app/generations.json && rm /app/generations.json || true
 
-RUN pip3 install .
+RUN pip3 install . && \
+    pip3 install lctk sortedcontainers
 
 CMD ["python3", "main.py"]

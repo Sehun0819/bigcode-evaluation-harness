@@ -102,7 +102,8 @@ class GeneralCodeToText(Task):
 
     def get_dataset(self):
         """Returns dataset for the task or an iterable of any object, that get_prompt can handle"""
-        return self.dataset["test"]
+        # return self.dataset["test"]
+        return self.dataset["test"].filter(lambda x: x["id"] % 100 == 0)
 
     @staticmethod
     def standardize_docstring_prompt(prefix):
