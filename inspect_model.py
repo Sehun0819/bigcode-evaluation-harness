@@ -1,5 +1,6 @@
 # https://www.deepspeed.ai/tutorials/flops-profiler/
 
+import os
 import torch
 from deepspeed.profiling.flops_profiler import get_model_profile
 from deepspeed.accelerator import get_accelerator
@@ -19,12 +20,6 @@ def parse_arg():
         type=str,
         help="Directory name of target model. Should be located at this directory.",
         required=True,
-    )
-    parser.add_argument(
-        "--pt",
-        type=str,
-        help="(Our custom models only) File name of PyTorch model (.py). Should be located at model directory.",
-        default="",
     )
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--seq_len", type=int)
@@ -47,7 +42,21 @@ def bert_input_constructor(batch_size, seq_len, tokenizer):
     return inputs
 
 
-def inspect(model, pt, batch_size, seq_len):
+def get_pt_path(model_path):
+    if not os.path.isdir(model_path):
+        return None
+
+    for filename in os.listdir(model_path):
+        file_extension = os.path.splitext(filename)[1]
+        if file_extension == ".pt":
+            pt_path = os.path.join(model_path, filename)
+            print(f"Found PyTorch model `{pt_path}'")
+            return pt_path
+        
+    return None
+
+
+def inspect(model, batch_size, seq_len):
     with get_accelerator().device(0):
         tokenizer = AutoTokenizer.from_pretrained(
             model,
@@ -56,8 +65,9 @@ def inspect(model, pt, batch_size, seq_len):
             padding_side="right",
         )
 
-        if pt:
-            model = torch.load(pt, weights_only=False)
+        pt_path = get_pt_path(model)
+        if pt_path:
+            model = torch.load(pt_path, weights_only=False)
         else:
             model = AutoModelForCausalLM.from_pretrained(
                 model,
@@ -83,7 +93,7 @@ def main():
 
     args = parse_arg()
 
-    inspect(args.model, args.pt, args.batch_size, args.seq_len)
+    inspect(args.model, args.batch_size, args.seq_len)
 
     end_time = time.time()
     elapsed_time_s = end_time - start_time

@@ -45,11 +45,6 @@ def parse_args():
         help="Model to evaluate, provide a repo name in Hugging Face hub or a local path",
     )
     parser.add_argument(
-        "--pt",
-        default="",
-        help="PyTorch model(.pt) to evaluate, provide a local path",
-    )
-    parser.add_argument(
         "--modeltype",
         default="causal",
         help="AutoModel to use, it can be causal or seq2seq",
@@ -234,6 +229,20 @@ def get_gpus_max_memory(max_memory, num_gpus):
     return max_memory
 
 
+def get_pt_path(model_path):
+    if not os.path.isdir(model_path):
+        return None
+
+    for filename in os.listdir(model_path):
+        file_extension = os.path.splitext(filename)[1]
+        if file_extension == ".pt":
+            pt_path = os.path.join(model_path, filename)
+            print(f"Found PyTorch model `{pt_path}'")
+            return pt_path
+        
+    return None
+
+
 def main():
     args = parse_args()
     transformers.logging.set_verbosity_error()
@@ -298,8 +307,9 @@ def main():
                     print("Loading model in auto mode")
 
         if args.modeltype == "causal":
-            if args.pt != "":
-                model = torch.load(args.pt, weights_only=False)
+            pt_path = get_pt_path(args.model)
+            if pt_path:
+                model = torch.load(pt_path, weights_only=False)
             else:
                 model = AutoModelForCausalLM.from_pretrained(
                     args.model,
